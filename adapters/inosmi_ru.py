@@ -2,8 +2,10 @@ from bs4 import BeautifulSoup
 import requests
 import pytest
 
-from .exceptions import ArticleNotFound
-from .html_tools import remove_buzz_attrs, remove_buzz_tags, remove_all_tags
+from adapters.exceptions import ArticleNotFound
+from adapters.html_tools import remove_buzz_attrs, remove_buzz_tags, remove_all_tags
+
+# https://dvmn.org/modules/async-python/lesson/jaundice-rate/#3
 
 
 def sanitize(html, plaintext=False):
