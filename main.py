@@ -1,10 +1,12 @@
+import asyncio
 import dataclasses
+import logging
+import time
+from contextlib import contextmanager
 from enum import Enum
 from pprint import pprint
 
 import aiohttp
-import asyncio
-
 import pymorphy2
 from aiohttp import InvalidURL, ClientResponseError
 from anyio import create_task_group
@@ -14,7 +16,7 @@ from adapters.exceptions import ArticleNotFound
 from adapters.inosmi_ru import sanitize
 from text_tools import split_by_words, calculate_jaundice_rate
 
-TIMEOUT_IN_SECONDS = 2
+TIMEOUT_IN_SECONDS = 3
 
 
 class ProcessingStatus(Enum):
@@ -30,6 +32,12 @@ class Article:
     status: ProcessingStatus
     words_count: int | None = None
     rate: float | None = None
+
+
+@contextmanager
+def timer():
+    start = time.monotonic()
+    yield lambda: time.monotonic() - start
 
 
 async def fetch(session, url):
@@ -48,16 +56,23 @@ async def process_article(charged_words, morph, session, article, rates: list):
     try:
         async with timeout(TIMEOUT_IN_SECONDS):
             html = await fetch(session, article)
-            clean_plaintext = sanitize(html, plaintext=True)
-            words = split_by_words(morph, clean_plaintext)
+
+        clean_plaintext = sanitize(html, plaintext=True)
+
+        with timer() as counter:
+            async with timeout(TIMEOUT_IN_SECONDS):
+                words = await split_by_words(morph, clean_plaintext)
             rate = calculate_jaundice_rate(words, charged_words)
 
-            rates.append(Article(
+        rates.append(
+            Article(
                 status=ProcessingStatus.OK,
                 url=article,
                 words_count=len(words),
                 rate=rate
-            ))
+            )
+        )
+        logging.info(f'finished in {counter():.4f} second(s)')
     except (InvalidURL, ClientResponseError):
         rates.append(Article(url=article, status=ProcessingStatus.FETCH_ERROR))
     except ArticleNotFound:
@@ -67,6 +82,8 @@ async def process_article(charged_words, morph, session, article, rates: list):
 
 
 async def main():
+    logging.basicConfig(level=logging.INFO, format='%(levelname)s:%(name)s:%(message)s')
+
     morph = pymorphy2.MorphAnalyzer()
     charged_words = get_charged_words_from_file('charged_dict/negative_words.txt')
     charged_words.extend(get_charged_words_from_file('charged_dict/positive_words.txt'))
@@ -92,6 +109,20 @@ async def main():
 
     pprint(rates)
 
+    # test_file_path = 'gogol_nikolay_taras_bulba_-_bookscafenet.txt'
+    # with open(test_file_path, 'r') as file:
+    #     test_text = file.read()
+    #
+    # with timer() as counter:
+    #     try:
+    #         async with timeout(TIMEOUT_IN_SECONDS):
+    #             words = await split_by_words(morph, test_text)
+    #         rate = calculate_jaundice_rate(words, charged_words)
+    #     except asyncio.exceptions.TimeoutError:
+    #         print('TimeoutError')
+    #
+    #
+    # logging.info(f'finished in {counter():.4f} second(s)')
 
 if __name__ == '__main__':
     asyncio.run(main())
