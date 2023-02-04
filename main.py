@@ -8,16 +8,20 @@ import asyncio
 import pymorphy2
 from aiohttp import InvalidURL, ClientResponseError
 from anyio import create_task_group
+from async_timeout import timeout
 
 from adapters.exceptions import ArticleNotFound
 from adapters.inosmi_ru import sanitize
 from text_tools import split_by_words, calculate_jaundice_rate
+
+TIMEOUT_IN_SECONDS = 2
 
 
 class ProcessingStatus(Enum):
     OK = 'OK'
     FETCH_ERROR = 'FETCH_ERROR'
     PARSING_ERROR = 'PARSING_ERROR'
+    TIMEOUT = 'TIMEOUT'
 
 
 @dataclasses.dataclass
@@ -42,21 +46,24 @@ def get_charged_words_from_file(path):
 
 async def process_article(charged_words, morph, session, article, rates: list):
     try:
-        html = await fetch(session, article)
-        clean_plaintext = sanitize(html, plaintext=True)
-        words = split_by_words(morph, clean_plaintext)
-        rate = calculate_jaundice_rate(words, charged_words)
+        async with timeout(TIMEOUT_IN_SECONDS):
+            html = await fetch(session, article)
+            clean_plaintext = sanitize(html, plaintext=True)
+            words = split_by_words(morph, clean_plaintext)
+            rate = calculate_jaundice_rate(words, charged_words)
 
-        rates.append(Article(
-            status=ProcessingStatus.OK,
-            url=article,
-            words_count=len(words),
-            rate=rate
-        ))
+            rates.append(Article(
+                status=ProcessingStatus.OK,
+                url=article,
+                words_count=len(words),
+                rate=rate
+            ))
     except (InvalidURL, ClientResponseError):
         rates.append(Article(url=article, status=ProcessingStatus.FETCH_ERROR))
     except ArticleNotFound:
         rates.append(Article(url=article, status=ProcessingStatus.PARSING_ERROR))
+    except asyncio.exceptions.TimeoutError:
+        rates.append(Article(url=article, status=ProcessingStatus.TIMEOUT))
 
 
 async def main():
