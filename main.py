@@ -1,5 +1,6 @@
 import dataclasses
 from enum import Enum
+from pprint import pprint
 
 import aiohttp
 import asyncio
@@ -16,14 +17,15 @@ from text_tools import split_by_words, calculate_jaundice_rate
 class ProcessingStatus(Enum):
     OK = 'OK'
     FETCH_ERROR = 'FETCH_ERROR'
+    PARSING_ERROR = 'PARSING_ERROR'
 
 
 @dataclasses.dataclass
 class Article:
     url: str
     status: ProcessingStatus
-    words_count: int = 0
-    rate: float = 0
+    words_count: int | None = None
+    rate: float | None = None
 
 
 async def fetch(session, url):
@@ -51,8 +53,10 @@ async def process_article(charged_words, morph, session, article, rates: list):
             words_count=len(words),
             rate=rate
         ))
-    except (InvalidURL, ClientResponseError, ArticleNotFound):
+    except (InvalidURL, ClientResponseError):
         rates.append(Article(url=article, status=ProcessingStatus.FETCH_ERROR))
+    except ArticleNotFound:
+        rates.append(Article(url=article, status=ProcessingStatus.PARSING_ERROR))
 
 
 async def main():
@@ -69,6 +73,7 @@ async def main():
         'https://inosmi.ru/20230204/iran_afganistan-260325637.html',
         'https://inosmi.ru/not/exist.html',
         'skjbgskdbnvlsdbvnso',
+        'https://lenta.ru/brief/2021/08/26/afg_terror/',
     ]
 
     rates = []
@@ -78,7 +83,7 @@ async def main():
             for article in TEST_ARTICLES:
                 tg.start_soon(process_article, charged_words, morph, session, article, rates)
 
-    print(rates)
+    pprint(rates)
 
 
 if __name__ == '__main__':
