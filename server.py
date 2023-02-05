@@ -1,6 +1,7 @@
 import dataclasses
 import json
 import logging
+from http import HTTPStatus
 
 import aiohttp
 import pymorphy2
@@ -22,8 +23,8 @@ async def handle(request):
         raise HTTPBadRequest
 
     urls = query.split(',')
-    if not urls or len(urls) > 10:
-        raise HTTPBadRequest
+    if len(urls) > 10:
+        return json_response({'error': 'too many urls in request, should be 10 or less'}, status=HTTPStatus.BAD_REQUEST)
 
     rates = []
     app = request.app
@@ -46,7 +47,6 @@ def main():
     app = web.Application()
     app.add_routes([
         web.get('/', handle),
-        web.get('/{name}', handle)
     ])
     app['morph'] = morph
     app['charged_words'] = charged_words
