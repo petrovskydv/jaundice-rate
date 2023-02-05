@@ -19,7 +19,7 @@ from text_tools import split_by_words, calculate_jaundice_rate
 TIMEOUT_IN_SECONDS = 3
 
 
-class ProcessingStatus(Enum):
+class ProcessingStatus(str, Enum):
     OK = 'OK'
     FETCH_ERROR = 'FETCH_ERROR'
     PARSING_ERROR = 'PARSING_ERROR'
