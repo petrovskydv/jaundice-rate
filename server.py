@@ -3,9 +3,8 @@ import json
 import logging
 from http import HTTPStatus
 
-import aiohttp
 import pymorphy2
-from aiohttp import web
+from aiohttp import web, ClientSession
 from aiohttp.web_exceptions import HTTPBadRequest
 from aiohttp.web_response import json_response
 from anyio import create_task_group
@@ -13,8 +12,10 @@ from anyio import create_task_group
 from main import process_article, get_charged_words_from_file
 
 
-def json_encode(articles):
-    return json.dumps([dataclasses.asdict(article) for article in articles], indent=4, )
+def encode_articles(articles):
+    """Функция для сериализации датакласса в json"""
+    encoded_articles = [dataclasses.asdict(article) for article in articles]
+    return json.dumps(encoded_articles, indent=4)
 
 
 async def handle(request):
@@ -29,12 +30,12 @@ async def handle(request):
     rates = []
     app = request.app
 
-    async with aiohttp.ClientSession() as session:
+    async with ClientSession() as session:
         async with create_task_group() as tg:
             for article in urls:
                 tg.start_soon(process_article, app['charged_words'], app['morph'], session, article, rates)
 
-    return json_response(rates, dumps=json_encode)
+    return json_response(rates, dumps=encode_articles)
 
 
 def main():
