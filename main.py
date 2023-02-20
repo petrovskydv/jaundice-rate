@@ -5,6 +5,7 @@ import time
 from contextlib import contextmanager
 from enum import Enum
 
+import pytest
 from aiohttp import InvalidURL, ClientResponseError, ClientSession
 from anyio import create_task_group
 from async_timeout import timeout
@@ -126,3 +127,32 @@ async def main():
 
 if __name__ == '__main__':
     asyncio.run(main())
+
+fetch_error_article = Article(
+    url='https://inosmi.ru/not/exist.html',
+    status=ProcessingStatus.FETCH_ERROR,
+    words_count=None,
+    rate=None
+)
+
+parsing_error_article = Article(
+    url='https://lenta.ru/brief/2021/08/26/afg_terror/',
+    status=ProcessingStatus.PARSING_ERROR,
+    words_count=None,
+    rate=None
+)
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize(
+    'article_url,article',
+    [(fetch_error_article.url, fetch_error_article), (parsing_error_article.url, parsing_error_article)]
+)
+async def test_parsing_error(article_url, article, analyzer, charged_words):
+    articles = []
+    async with ClientSession() as session:
+        await process_article(charged_words, analyzer, session, article_url, articles)
+
+    processed_article, = articles
+
+    assert processed_article == article
