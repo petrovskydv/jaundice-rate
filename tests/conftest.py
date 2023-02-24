@@ -1,7 +1,7 @@
 import pytest
 from pymorphy2 import MorphAnalyzer
 
-from main import get_charged_words_from_file
+from services.processor import get_charged_words_from_file
 
 
 @pytest.fixture(scope='session')

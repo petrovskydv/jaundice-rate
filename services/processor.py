@@ -11,7 +11,7 @@ from pymorphy2 import MorphAnalyzer
 
 from adapters.exceptions import ArticleNotFound
 from adapters.inosmi_ru import sanitize
-from text_tools import split_by_words, calculate_jaundice_rate
+from services.text_tools import split_by_words, calculate_jaundice_rate
 
 TIMEOUT_IN_SECONDS = 3
 

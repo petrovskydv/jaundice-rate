@@ -9,7 +9,7 @@ from aiohttp.web_exceptions import HTTPBadRequest
 from aiohttp.web_response import json_response
 from anyio import create_task_group
 
-from main import process_article, get_charged_words_from_file
+from services.processor import process_article, get_charged_words_from_file
 
 
 def encode_articles(articles):

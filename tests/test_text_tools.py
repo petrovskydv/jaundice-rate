@@ -2,7 +2,7 @@ import asyncio
 
 import pymorphy2
 
-from text_tools import split_by_words, calculate_jaundice_rate
+from services.text_tools import split_by_words, calculate_jaundice_rate
 
 
 def test_split_by_words():

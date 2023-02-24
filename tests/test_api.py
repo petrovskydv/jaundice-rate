@@ -1,7 +1,7 @@
 import pytest
 from aiohttp import ClientSession
 
-from main import process_article, Article, ProcessingStatus
+from services.processor import process_article, Article, ProcessingStatus
 
 FETCH_ERROR_ARTICLE = Article(
     url='https://inosmi.ru/not/exist.html',
