@@ -11,6 +11,8 @@ def analyzer():
 
 @pytest.fixture(scope='session')
 def charged_words():
-    charged_words = get_charged_words_from_file('charged_dict/negative_words.txt')
-    charged_words.extend(get_charged_words_from_file('charged_dict/positive_words.txt'))
+    negative_words_path = '../charged_dict/negative_words.txt'
+    positive_words_path = '../charged_dict/positive_words.txt'
+    charged_words = get_charged_words_from_file(negative_words_path)
+    charged_words.extend(get_charged_words_from_file(positive_words_path))
     return charged_words

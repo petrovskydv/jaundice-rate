@@ -5,9 +5,7 @@ import time
 from contextlib import contextmanager
 from enum import Enum
 
-import pytest
 from aiohttp import InvalidURL, ClientResponseError, ClientSession
-from anyio import create_task_group
 from async_timeout import timeout
 from pymorphy2 import MorphAnalyzer
 
@@ -79,80 +77,3 @@ async def process_article(charged_words: list[str], morph: MorphAnalyzer, sessio
         rates.append(Article(url=article, status=ProcessingStatus.PARSING_ERROR))
     except asyncio.exceptions.TimeoutError:
         rates.append(Article(url=article, status=ProcessingStatus.TIMEOUT))
-
-
-async def main():
-    logging.basicConfig(level=logging.INFO, format='%(levelname)s:%(name)s:%(message)s')
-
-    morph = MorphAnalyzer()
-    charged_words = get_charged_words_from_file('charged_dict/negative_words.txt')
-    charged_words.extend(get_charged_words_from_file('charged_dict/positive_words.txt'))
-
-    TEST_ARTICLES = [
-        'https://inosmi.ru/20230204/neft-260327000.html',
-        'https://inosmi.ru/20230204/ssha-260319321.html',
-        'https://inosmi.ru/20230204/yuzhnaya-koreya-260307651.html',
-        'https://inosmi.ru/20230204/molo-260328162.html',
-        'https://inosmi.ru/20230204/surrogatnoe-materinstvo-260325860.html',
-        'https://inosmi.ru/20230204/iran_afganistan-260325637.html',
-        'https://inosmi.ru/not/exist.html',
-        'skjbgskdbnvlsdbvnso',
-        'https://lenta.ru/brief/2021/08/26/afg_terror/',
-    ]
-
-    rates = []
-
-    'http://localhost:8888/?urls=https://inosmi.ru/20230204/neft-260327000.html,https://inosmi.ru/20230204/ssha-260319321.html,https://inosmi.ru/20230204/yuzhnaya-koreya-260307651.html,https://inosmi.ru/not/exist.html,https://lenta.ru/brief/2021/08/26/afg_terror/,asdgftaegdhjtehrs'
-
-    async with ClientSession() as session:
-        async with create_task_group() as tg:
-            for article in TEST_ARTICLES:
-                tg.start_soon(process_article, charged_words, morph, session, article, rates)
-
-    # test_file_path = 'gogol_nikolay_taras_bulba_-_bookscafenet.txt'
-    # with open(test_file_path, 'r') as file:
-    #     test_text = file.read()
-    #
-    # with timer() as counter:
-    #     try:
-    #         async with timeout(TIMEOUT_IN_SECONDS):
-    #             words = await split_by_words(morph, test_text)
-    #         rate = calculate_jaundice_rate(words, charged_words)
-    #     except asyncio.exceptions.TimeoutError:
-    #         print('TimeoutError')
-    #
-    #
-    # logging.info(f'finished in {counter():.4f} second(s)')
-
-
-if __name__ == '__main__':
-    asyncio.run(main())
-
-fetch_error_article = Article(
-    url='https://inosmi.ru/not/exist.html',
-    status=ProcessingStatus.FETCH_ERROR,
-    words_count=None,
-    rate=None
-)
-
-parsing_error_article = Article(
-    url='https://lenta.ru/brief/2021/08/26/afg_terror/',
-    status=ProcessingStatus.PARSING_ERROR,
-    words_count=None,
-    rate=None
-)
-
-
-@pytest.mark.asyncio
-@pytest.mark.parametrize(
-    'article_url,article',
-    [(fetch_error_article.url, fetch_error_article), (parsing_error_article.url, parsing_error_article)]
-)
-async def test_parsing_error(article_url, article, analyzer, charged_words):
-    articles = []
-    async with ClientSession() as session:
-        await process_article(charged_words, analyzer, session, article_url, articles)
-
-    processed_article, = articles
-
-    assert processed_article == article
