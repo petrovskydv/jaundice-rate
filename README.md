@@ -1,3 +1,4 @@
+[![Pytest](https://github.com/petrovskydv/jaundice-rate/actions/workflows/python.yml/badge.svg)](https://github.com/petrovskydv/jaundice-rate/actions/workflows/python.yml)
 # Фильтр желтушных новостей
 
 Сервер принимает запрос на анализ статей с сайта [inosmi.ru](https://inosmi.ru/). Адреса стетей для анализа передаются списком в параметре urls.
