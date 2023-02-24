@@ -1,10 +1,53 @@
 # Фильтр желтушных новостей
 
-[TODO. Опишите проект, схему работы]
+Сервер принимает запрос на анализ статей с сайта inosmi.ru. Адреса стетей для анализа передаются саписком в параметре urls.
 
-Пока поддерживается только один новостной сайт - [ИНОСМИ.РУ](https://inosmi.ru/). Для него разработан специальный адаптер, умеющий выделять текст статьи на фоне остальной HTML разметки. Для других новостных сайтов потребуются новые адаптеры, все они будут находиться в каталоге `adapters`. Туда же помещен код для сайта ИНОСМИ.РУ: `adapters/inosmi_ru.py`.
+Пример запроса:
+```
+http://localhost:8888/?urls=https://inosmi.ru/20230204/neft-260327000.html,https://inosmi.ru/20230204/ssha-260319321.html,https://inosmi.ru/20230204/yuzhnaya-koreya-260307651.html,https://inosmi.ru/not/exist.html,https://lenta.ru/brief/2021/08/26/afg_terror/,asdgftaegdhjtehrs
+```
 
-В перспективе можно создать универсальный адаптер, подходящий для всех сайтов, но его разработка будет сложной и потребует дополнительных времени и сил.
+В ответ сервер выдает json с результатами анализа статей. Пример ответа:
+```json
+[
+    {
+        "url": "asdgftaegdhjtehrs",
+        "status": "FETCH_ERROR",
+        "words_count": null,
+        "rate": null
+    },
+    {
+        "url": "https://inosmi.ru/not/exist.html",
+        "status": "FETCH_ERROR",
+        "words_count": null,
+        "rate": null
+    },
+    {
+        "url": "https://lenta.ru/brief/2021/08/26/afg_terror/",
+        "status": "PARSING_ERROR",
+        "words_count": null,
+        "rate": null
+    },
+    {
+        "url": "https://inosmi.ru/20230204/ssha-260319321.html",
+        "status": "OK",
+        "words_count": 490,
+        "rate": 1.22
+    },
+    {
+        "url": "https://inosmi.ru/20230204/neft-260327000.html",
+        "status": "OK",
+        "words_count": 774,
+        "rate": 1.94
+    },
+    {
+        "url": "https://inosmi.ru/20230204/yuzhnaya-koreya-260307651.html",
+        "status": "OK",
+        "words_count": 1153,
+        "rate": 0.61
+    }
+]
+```
 
 # Как установить
 
@@ -19,20 +62,17 @@ pip install -r requirements.txt
 # Как запустить
 
 ```python3
-python main.py
+python server.py
 ```
 
 # Как запустить тесты
 
-Для тестирования используется [pytest](https://docs.pytest.org/en/latest/), тестами покрыты фрагменты кода сложные в отладке: text_tools.py и адаптеры. Команды для запуска тестов:
+Для тестирования используется [pytest](https://docs.pytest.org/en/latest/). Команда для запуска тестов:
 
 ```
-python -m pytest adapters/inosmi_ru.py
+python -m pytest tests
 ```
 
-```
-python -m pytest text_tools.py
-```
 
 # Цели проекта
 
