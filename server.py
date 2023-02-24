@@ -24,7 +24,8 @@ async def handle(request):
         raise HTTPBadRequest
 
     urls = query.split(',')
-    if len(urls) > 10:
+    max_urls_count = 10
+    if len(urls) > max_urls_count:
         return json_response({'error': 'too many urls in request, should be 10 or less'}, status=HTTPStatus.BAD_REQUEST)
 
     rates = []
